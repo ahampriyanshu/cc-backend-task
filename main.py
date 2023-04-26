@@ -1,55 +1,31 @@
-list_1 = [
-    {
-        "id": "1",
-        "name": "Shrey",
-        "age": 25
-    },
-    {
-        "id": "3",
-        "age": 10,
-        "name": "Hello"
-    },
-    {
-        "id": "2",
-        "name": "World",
-        "age": 24
-    },
-]
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
+from routes import user, organisation, permissions
+from fastapi.middleware.cors import CORSMiddleware
 
-list_2 = [
-    {
-        "id": "1",
-        "marks": 100
-    },
-    {
-        "id": "3",
-        "marks": 90,
-        "roll_no": 11,
-        "extra_info": {
-            "hello": "world",
-        },
-    },
-]
+app = FastAPI(
+    title="User Access Management",
+    description="Cosmocloud backend task",
+)
 
+origins = ["*"]
 
-def merge_lists(list_1, list_2) -> list:
-    """
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+   allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["*"],
+)
 
-      Args:
-          list_1 [list], list_2 [list]
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request, exc):
+    return JSONResponse(status_code=exc.status_code, content={"error_message": exc.detail})
 
-      Returns:
-        [list]: List of merged dictionaries (no duplicates of instance 'id' ).
+@app.exception_handler(Exception)
+async def http_exception_handler(request, exc):
+    return JSONResponse(status_code=500, content={"error_message": "internal server error"})
 
-    """
-    merged_list = {}
-    for object in [*list_1, *list_2]:
-        if object['id'] not in merged_list:
-            merged_list[object['id']] = object
-        else:
-            merged_list[object['id']].update(object)
-
-    return list(merged_list.values())
-
-
-list_3 = merge_lists(list_1, list_2)
+app.include_router(user.router)
+app.include_router(organisation.router)
+app.include_router(permissions.router)
